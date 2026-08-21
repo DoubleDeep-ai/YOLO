@@ -58,28 +58,48 @@ YOLO가 균열 후보를 빠르게 찾고, SAM이 해당 후보 주변에서 경
 | YOLO26m-seg | 1024 | 최대 250 epochs, patience 50 | 고해상도 균열 학습 |
 | YOLO + SAM 2.1 | YOLO 1280 / SAM 1024 | 마스크 기반 refinement | 경계 보정 및 라벨 생성 |
 
-### Preliminary Model Comparison
+### YOLO11s Epoch Ablation
 
-아래 값은 각 학습 결과 그래프의 **마지막 epoch 지점에서 읽은 근삿값**입니다. 서로 다른 학습 실행 결과이므로 잠정 비교용이며, 최종 성능은 동일한 validation split에서 각 `best.pt`를 재평가하여 확정할 예정입니다.
+동일한 YOLO11s-seg 계열에서 학습 epoch를 10·50·100으로 늘렸을 때의 결과입니다. 아래 최종값은 각 실행의 마지막 epoch에서 추출한 수치입니다.
 
-#### Segmentation Mask Metrics
+#### Final-Epoch Segmentation Metrics
 
-| Run | Model | Input | Epochs | Precision (M) | Recall (M) | mAP50 (M) | mAP50-95 (M) |
-|---|---|---:|---:|---:|---:|---:|---:|
-| s10 | YOLO11s-seg | 640 | 10 | ≈0.69 | ≈0.53 | ≈0.47 | ≈0.15 |
-| **s50** | **YOLO11s-seg** | **640** | **50** | **≈0.75** | **≈0.67** | **≈0.68** | **≈0.24** |
-| m100 | YOLO11m-seg | 640 | 100 | ≈0.75 | ≈0.64 | ≈0.66 | ≈0.23 |
+| Run | Input | Epochs | Mask Precision | Mask Recall | Mask mAP50 | Mask mAP50-95 |
+|---|---:|---:|---:|---:|---:|---:|
+| s10 | 640 | 10 | 0.6890 | 0.5259 | 0.4753 | 0.1538 |
+| s50 | 640 | 50 | 0.7498 | **0.6593** | **0.6768** | **0.2419** |
+| s100 | 640 | 100 | **0.7808** | 0.6463 | 0.6685 | 0.2385 |
 
-#### Bounding Box Metrics
+#### Final-Epoch Bounding-Box Metrics
 
-| Run | Model | Input | Epochs | Precision (B) | Recall (B) | mAP50 (B) | mAP50-95 (B) |
-|---|---|---:|---:|---:|---:|---:|---:|
-| s10 | YOLO11s-seg | 640 | 10 | ≈0.78 | ≈0.61 | ≈0.63 | ≈0.41 |
-| s50 | YOLO11s-seg | 640 | 50 | ≈0.79 | ≈0.76 | ≈0.80 | ≈0.61 |
-| m100 | YOLO11m-seg | 640 | 100 | ≈0.84 | ≈0.75 | ≈0.80 | ≈0.60 |
+| Run | Box Precision | Box Recall | Box mAP50 | Box mAP50-95 |
+|---|---:|---:|---:|---:|
+| s10 | 0.7825 | 0.6148 | 0.6381 | 0.4131 |
+| s50 | 0.7659 | **0.7632** | 0.7948 | 0.6122 |
+| s100 | **0.8807** | 0.7296 | **0.8233** | **0.6291** |
 
-현재 제공된 그래프 기준으로는 **s50이 가장 높은 Mask Recall, Mask mAP50 및 Mask mAP50-95를 기록**했습니다. 다만 이 결론은 동일 조건 재평가 전의 잠정 결과입니다.
+#### Best Checkpoint by Mask mAP50-95
 
+| Run | Best epoch | Mask Precision | Mask Recall | Mask mAP50 | Mask mAP50-95 |
+|---|---:|---:|---:|---:|---:|
+| s10 | 11* | 0.6890 | 0.5259 | 0.4753 | 0.1538 |
+| s50 | 48 | 0.7910 | 0.6166 | 0.6628 | 0.2450 |
+| s100 | 95 | **0.8017** | **0.6518** | **0.6894** | **0.2453** |
+
+\* 실험 요약 코드가 출력한 epoch 번호를 그대로 기록했습니다. 원본 `results.csv`의 indexing 방식은 최종 정리 전에 다시 확인할 예정입니다.
+
+#### Improvement over s10
+
+| Run | Mask Precision | Mask Recall | Mask mAP50 | Mask mAP50-95 |
+|---|---:|---:|---:|---:|
+| s50 | +14.81% | +17.25% | +39.44% | +59.37% |
+| s100 | +16.36% | +23.94% | +45.04% | +59.52% |
+
+**Interpretation.** 10→50 epochs에서 Mask 성능이 크게 향상됐습니다. 50→100 epochs에서는 최고 체크포인트의 Mask mAP50-95가 0.2450에서 0.2453으로 거의 정체된 반면, Mask mAP50과 Precision은 추가로 개선됐습니다. 따라서 이 데이터에서는 약 50 epochs 이후 수익 체감이 나타났으며, 최종 모델 선택에는 성능뿐 아니라 학습 비용과 Recall 요구 수준을 함께 고려해야 합니다.
+
+#### Preliminary YOLO11m Reference
+
+별도로 제공된 YOLO11m-seg 100-epoch 학습 그래프의 마지막 지점은 Mask Precision ≈0.75, Recall ≈0.64, mAP50 ≈0.66, mAP50-95 ≈0.23입니다. 이 값은 그래프에서 읽은 근삿값이므로 위 YOLO11s 표의 정확한 CSV 수치와 직접적인 최종 비교에는 사용하지 않습니다.
 ## Repository Structure
 
 ```text
