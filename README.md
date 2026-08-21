@@ -5,6 +5,7 @@ YOLO로 균열을 세그멘테이션하고, 필요하면 SAM 2.1로 경계를 �
 ## 구성
 
 - `notebooks/YOLO11_Crack_Model_Open_and_Test_Colab.ipynb`: 학습된 YOLO11 모델을 불러와 단일 균열 이미지를 테스트하고 결과를 Drive에 저장
+- `notebooks/YOLO26m_Crack_Training.ipynb`: Roboflow 데이터셋으로 YOLO26m-seg를 1024 해상도에서 학습·검증
 - `notebooks/YOLO_SAM_Crack_Final_Process.ipynb`: YOLO 예측 마스크를 SAM으로 보정하고 여러 이미지를 일괄 처리
 - `weights/best.pt`: 학습된 YOLO 균열 세그멘테이션 가중치
 - `requirements.txt`: 주요 Python 패키지
@@ -16,6 +17,14 @@ YOLO로 균열을 세그멘테이션하고, 필요하면 SAM 2.1로 경계를 �
 2. Google Drive를 연결하고 `best.pt`를 Drive에 등록합니다.
 3. 테스트할 균열 이미지 한 장을 업로드합니다.
 4. 예측 셀을 실행하고 시각화 결과와 Drive 저장 파일을 확인합니다.
+
+## YOLO26m 학습
+
+1. `YOLO26m_Crack_Training.ipynb`를 GPU 런타임의 Google Colab에서 엽니다.
+2. Google Drive를 연결하고 실행 중 Roboflow API 키를 입력합니다.
+3. 데이터셋과 GPU 확인 셀을 실행합니다.
+4. YOLO26m-seg를 `imgsz=1024`, 최대 250 epoch, `patience=50`으로 학습합니다.
+5. 결과와 `best.pt`는 Google Drive의 `YOLO26_Crack_Final/yolo26m_seg_1024_patience50`에 저장됩니다.
 
 ## YOLO → SAM 일괄 처리
 
@@ -32,4 +41,4 @@ YOLO로 균열을 세그멘테이션하고, 필요하면 SAM 2.1로 경계를 �
 
 ## 주의
 
-`best.pt`는 GitHub에서 직접 실행되는 파일이 아닙니다. Colab 또는 로컬 환경에서 경로를 지정해 사용하세요. 데이터셋과 실행 결과는 저장소에 포함하지 않습니다.
+`best.pt`는 GitHub에서 직접 실행되는 파일이 아닙니다. Colab 또는 로컬 환경에서 경로를 지정해 사용하세요. 데이터셋과 실행 결과는 저장소에 포함하지 않습니다. Roboflow API 키는 코드나 저장소에 기록하지 마세요.
