@@ -58,7 +58,27 @@ YOLO가 균열 후보를 빠르게 찾고, SAM이 해당 후보 주변에서 경
 | YOLO26m-seg | 1024 | 최대 250 epochs, patience 50 | 고해상도 균열 학습 |
 | YOLO + SAM 2.1 | YOLO 1280 / SAM 1024 | 마스크 기반 refinement | 경계 보정 및 라벨 생성 |
 
-> 정량 성능은 동일한 validation split과 조건으로 다시 평가한 뒤 Precision, Recall, F1, mAP50, mAP50-95 기준으로 비교할 예정입니다. 확인되지 않은 수치는 기록하지 않습니다.
+### Preliminary Model Comparison
+
+아래 값은 각 학습 결과 그래프의 **마지막 epoch 지점에서 읽은 근삿값**입니다. 서로 다른 학습 실행 결과이므로 잠정 비교용이며, 최종 성능은 동일한 validation split에서 각 `best.pt`를 재평가하여 확정할 예정입니다.
+
+#### Segmentation Mask Metrics
+
+| Run | Model | Input | Epochs | Precision (M) | Recall (M) | mAP50 (M) | mAP50-95 (M) |
+|---|---|---:|---:|---:|---:|---:|---:|
+| s10 | YOLO11s-seg | 640 | 10 | ≈0.69 | ≈0.53 | ≈0.47 | ≈0.15 |
+| **s50** | **YOLO11s-seg** | **640** | **50** | **≈0.75** | **≈0.67** | **≈0.68** | **≈0.24** |
+| m100 | YOLO11m-seg | 640 | 100 | ≈0.75 | ≈0.64 | ≈0.66 | ≈0.23 |
+
+#### Bounding Box Metrics
+
+| Run | Model | Input | Epochs | Precision (B) | Recall (B) | mAP50 (B) | mAP50-95 (B) |
+|---|---|---:|---:|---:|---:|---:|---:|
+| s10 | YOLO11s-seg | 640 | 10 | ≈0.78 | ≈0.61 | ≈0.63 | ≈0.41 |
+| s50 | YOLO11s-seg | 640 | 50 | ≈0.79 | ≈0.76 | ≈0.80 | ≈0.61 |
+| m100 | YOLO11m-seg | 640 | 100 | ≈0.84 | ≈0.75 | ≈0.80 | ≈0.60 |
+
+현재 제공된 그래프 기준으로는 **s50이 가장 높은 Mask Recall, Mask mAP50 및 Mask mAP50-95를 기록**했습니다. 다만 이 결론은 동일 조건 재평가 전의 잠정 결과입니다.
 
 ## Repository Structure
 
