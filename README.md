@@ -1,44 +1,159 @@
-# YOLO–SAM Crack Segmentation
+# Concrete Crack Segmentation with YOLO & SAM
 
-YOLO로 균열을 세그멘테이션하고, 필요하면 SAM 2.1로 경계를 보정하는 Google Colab 프로젝트입니다.
+> 콘크리트 균열을 픽셀 단위로 탐지하고, YOLO의 빠른 예측과 SAM의 경계 보정을 결합한 컴퓨터 비전 프로젝트
 
-## 구성
+![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
+![Ultralytics](https://img.shields.io/badge/Ultralytics-YOLO11%20%7C%20YOLO26-111F68)
+![SAM](https://img.shields.io/badge/Segmentation-SAM%202.1-6C5CE7)
+![Colab](https://img.shields.io/badge/Environment-Google%20Colab-F9AB00?logo=googlecolab&logoColor=white)
+![Task](https://img.shields.io/badge/Task-Instance%20Segmentation-2EA44F)
 
-- `notebooks/YOLO11_Crack_Model_Open_and_Test_Colab.ipynb`: 학습된 YOLO11 모델을 불러와 단일 균열 이미지를 테스트하고 결과를 Drive에 저장
-- `notebooks/YOLO26m_Crack_Training.ipynb`: Roboflow 데이터셋으로 YOLO26m-seg를 1024 해상도에서 학습·검증
-- `notebooks/YOLO_SAM_Crack_Final_Process.ipynb`: YOLO 예측 마스크를 SAM으로 보정하고 여러 이미지를 일괄 처리
-- `weights/best.pt`: 학습된 YOLO 균열 세그멘테이션 가중치
-- `requirements.txt`: 주요 Python 패키지
-- `.gitignore`: 입력 이미지와 생성 결과 등 대용량 작업 파일 제외
+김주형 · 단국대학교 토목환경공학과  
+Civil Engineering × Computer Vision
 
-## 빠른 모델 테스트
+## Project Overview
 
-1. `YOLO11_Crack_Model_Open_and_Test_Colab.ipynb`를 Google Colab에서 엽니다.
-2. Google Drive를 연결하고 `best.pt`를 Drive에 등록합니다.
-3. 테스트할 균열 이미지 한 장을 업로드합니다.
-4. 예측 셀을 실행하고 시각화 결과와 Drive 저장 파일을 확인합니다.
+시설물 균열 점검에서는 균열의 존재뿐 아니라 위치, 형태, 연속성 및 면적을 정밀하게 파악해야 합니다. 이 프로젝트는 콘크리트 이미지에서 균열을 인스턴스 세그멘테이션하고, 후처리 결과를 정량 분석 및 수동 검수 가능한 형태로 저장하는 파이프라인을 구축합니다.
 
-## YOLO26m 학습
+핵심 목표는 다음과 같습니다.
 
-1. `YOLO26m_Crack_Training.ipynb`를 GPU 런타임의 Google Colab에서 엽니다.
-2. Google Drive를 연결하고 실행 중 Roboflow API 키를 입력합니다.
-3. 데이터셋과 GPU 확인 셀을 실행합니다.
-4. YOLO26m-seg를 `imgsz=1024`, 최대 250 epoch, `patience=50`으로 학습합니다.
-5. 결과와 `best.pt`는 Google Drive의 `YOLO26_Crack_Final/yolo26m_seg_1024_patience50`에 저장됩니다.
+- YOLO11·YOLO26 모델의 균열 세그멘테이션 학습 및 비교
+- YOLO 예측 마스크를 SAM 2.1로 보정
+- 균열별 신뢰도와 픽셀 면적 산출
+- 비교 오버레이와 YOLO polygon 라벨 자동 생성
+- Google Colab과 Drive 기반의 재현 가능한 학습·추론 환경 구성
 
-## YOLO → SAM 일괄 처리
+## Pipeline
 
-1. `YOLO_SAM_Crack_Final_Process.ipynb`를 Google Colab에서 엽니다.
-2. `weights/best.pt`를 Google Drive에 업로드합니다.
-3. `YOLO_MODEL_PATH`, `INPUT_DIR`, `OUTPUT_DIR`를 실제 Drive 경로에 맞게 수정합니다.
-4. 입력 폴더에 균열 이미지를 넣고 셀을 순서대로 실행합니다.
+```mermaid
+flowchart TD
+    A["Concrete image"] --> B["YOLO segmentation"]
+    B --> C["Candidate mask"]
+    C --> D["SAM 2.1 refinement"]
+    D --> E["Quality filtering"]
+    E --> F["Final mask & polygon"]
+    F --> G["Area, confidence & CSV"]
+```
 
-기본 설정은 YOLO 신뢰도 0.25, 입력 크기 1280이며, SAM 후보는 YOLO 마스크와의 IoU 및 면적비 조건으로 검증됩니다.
+YOLO가 균열 후보를 빠르게 찾고, SAM이 해당 후보 주변에서 경계를 다시 추정합니다. SAM 결과가 YOLO 마스크와 지나치게 다르면 IoU·면적비 조건으로 제외하여 콘크리트 배경 전체가 선택되는 오류를 줄입니다.
 
-## 주요 결과
+## Key Features
 
-일괄 처리 노트북은 원본, YOLO 마스크, SAM 보정 마스크, 비교 오버레이, YOLO 형식 폴리곤 라벨, 이미지별 요약 CSV 및 Roboflow 업로드용 ZIP을 생성합니다.
+| 기능 | 내용 |
+|---|---|
+| Model training | YOLO11 및 YOLO26m 균열 세그멘테이션 학습 |
+| Model inference | 단일 이미지 업로드, 마스크·박스·신뢰도 시각화 |
+| SAM refinement | YOLO 마스크를 prompt로 사용한 SAM 2.1 경계 보정 |
+| Quality control | 최소 면적, IoU, 면적비 기반 후보 필터링 |
+| Quantification | 균열별·전체 픽셀 면적과 이미지 대비 면적비 산출 |
+| Label export | Roboflow 수정용 YOLO polygon 라벨과 ZIP 생성 |
+| Reproducibility | Colab, Google Drive, 고정 seed 기반 실행 흐름 |
 
-## 주의
+## Experiments
 
-`best.pt`는 GitHub에서 직접 실행되는 파일이 아닙니다. Colab 또는 로컬 환경에서 경로를 지정해 사용하세요. 데이터셋과 실행 결과는 저장소에 포함하지 않습니다. Roboflow API 키는 코드나 저장소에 기록하지 마세요.
+| 모델 | 입력 크기 | 학습 설정 | 용도 |
+|---|---:|---|---|
+| YOLO11s-seg | 640 | 10·50·100 epochs | epoch 증가에 따른 성능 비교 |
+| YOLO11m-seg | 640 | 50·100 epochs | 모델 크기 변화 비교 |
+| YOLO26m-seg | 1024 | 최대 250 epochs, patience 50 | 고해상도 균열 학습 |
+| YOLO + SAM 2.1 | YOLO 1280 / SAM 1024 | 마스크 기반 refinement | 경계 보정 및 라벨 생성 |
+
+> 정량 성능은 동일한 validation split과 조건으로 다시 평가한 뒤 Precision, Recall, F1, mAP50, mAP50-95 기준으로 비교할 예정입니다. 확인되지 않은 수치는 기록하지 않습니다.
+
+## Repository Structure
+
+```text
+YOLO/
+├── notebooks/
+│   ├── YOLO11_Crack_Model_Open_and_Test_Colab.ipynb
+│   ├── YOLO26m_Crack_Training.ipynb
+│   └── YOLO_SAM_Crack_Final_Process.ipynb
+├── weights/
+│   └── best.pt
+├── requirements.txt
+├── .gitignore
+└── README.md
+```
+
+### Notebooks
+
+| 노트북 | 역할 |
+|---|---|
+| [YOLO11 model test](notebooks/YOLO11_Crack_Model_Open_and_Test_Colab.ipynb) | 저장된 YOLO11 모델을 불러와 단일 이미지 예측 및 Drive 저장 |
+| [YOLO26m training](notebooks/YOLO26m_Crack_Training.ipynb) | Roboflow 데이터셋 다운로드, YOLO26m 학습 및 최적 모델 검증 |
+| [YOLO → SAM process](notebooks/YOLO_SAM_Crack_Final_Process.ipynb) | 여러 이미지의 YOLO 예측, SAM 보정, 결과·라벨 일괄 저장 |
+
+## Quick Start
+
+### 1. Google Colab에서 노트북 열기
+
+목적에 맞는 노트북을 선택하고 GPU 런타임에서 위에서부터 실행합니다.
+
+### 2. 모델 경로 설정
+
+저장소의 `weights/best.pt`를 Google Drive에 업로드한 뒤 노트북의 모델 경로를 수정합니다.
+
+```python
+YOLO_MODEL_PATH = "/content/drive/MyDrive/your_folder/best.pt"
+```
+
+### 3. 추론 설정 조정
+
+```python
+YOLO_CONF = 0.25
+YOLO_IMGSZ = 1280
+MIN_COMPONENT_AREA = 100
+MIN_IOU = 0.50
+MIN_AREA_RATIO = 0.50
+MAX_AREA_RATIO = 2.00
+```
+
+### 4. 결과 확인
+
+YOLO–SAM 파이프라인은 다음 결과를 생성합니다.
+
+```text
+results/
+├── masks/
+│   ├── yolo/
+│   ├── sam_raw/
+│   └── final/
+├── comparison_overlays/
+├── roboflow_dataset/
+├── processing_summary.csv
+└── processing_errors.csv
+```
+
+## Dataset
+
+데이터셋은 Roboflow에서 관리하며 저장소에는 포함하지 않습니다.
+
+- YOLO11 experiments: `university-bswxt / crack-uuw5e / version 8`
+- YOLO26 experiments: `aos-workspace / erc2-59n5c / version 1`
+- Task: instance segmentation
+- Class: `crack`
+
+데이터 사용 전 각 데이터셋의 공개 범위와 라이선스를 별도로 확인해야 합니다.
+
+## Current Limitations
+
+- 픽셀 면적을 실제 면적으로 환산하려면 기준 길이 또는 카메라 보정 정보가 필요합니다.
+- SAM은 입력 prompt가 부정확하면 균열 주변 배경을 과도하게 선택할 수 있습니다.
+- 서로 다른 모델의 공정한 비교를 위해 동일 test split 기반 재평가가 필요합니다.
+- 구조적 위험도 평가는 균열 마스크만으로 확정할 수 없으며 전문가 판단과 현장 정보가 필요합니다.
+
+## Next Steps
+
+- [ ] YOLO11s·YOLO11m·YOLO26m 동일 조건 정량 비교
+- [ ] 대표 성공·실패 사례 시각화
+- [ ] 균열 폭·길이·연속성을 반영한 평가 지표 검증
+- [ ] 실제 축척을 이용한 면적 및 폭 측정
+- [ ] YOLO–SAM 보정 전후 성능 비교
+
+## Security
+
+Roboflow API 키나 기타 인증정보를 노트북에 직접 입력해 저장하지 않습니다. 실행 시 환경 변수 또는 보이지 않는 입력 방식을 사용하세요. 이미 노출된 키는 폐기하고 재발급해야 합니다.
+
+## Disclaimer
+
+본 저장소는 연구 및 교육 목적의 프로젝트입니다. 예측 결과만으로 시설물의 안전등급이나 보수 필요성을 확정해서는 안 됩니다.
