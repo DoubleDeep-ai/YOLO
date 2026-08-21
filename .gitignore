@@ -1,0 +1,7 @@
+data/
+inputs/
+outputs/
+runs/
+*.zip
+.ipynb_checkpoints/
+__pycache__/
