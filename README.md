@@ -25,7 +25,7 @@ Civil Engineering × Computer Vision
 
 최고값은 각 실행에서 Mask mAP50-95가 가장 높은 epoch를 선택한 값입니다. s50과 s100의 최고값 차이는 0.0003(0.03%p)입니다. 반복 실험과 동일 테스트셋 재평가가 없어 이 차이를 통계적으로 유의한 우위로 해석하지 않습니다.
 
-수치는 실험 요약 표를 기준으로 정리했으며, 원본 CSV 대조와 epoch 번호 확인이 남아 있습니다.
+수치는 [첨부 실험 요약 캡처](docs/experiment-evidence.md)를 대조해 정리했습니다. 원본 `results.csv`는 제공 자료에 없어 CSV 대조와 epoch 번호 확인이 남아 있습니다. [전사한 정량 지표](results/yolo11s_epoch_metrics.json)는 재학습 결과가 아닌 캡처의 기록입니다.
 
 ## Project Overview
 
@@ -122,12 +122,37 @@ YOLO가 균열 후보를 빠르게 찾고, SAM이 해당 후보 주변에서 경
 
 별도로 제공된 YOLO11m-seg 100-epoch 학습 그래프의 마지막 지점은 Mask Precision ≈0.75, Recall ≈0.64, mAP50 ≈0.66, mAP50-95 ≈0.23입니다.
 
-이 값은 그래프에서 읽은 근삿값이므로 위 YOLO11s 실험 요약 표의 수치와 직접적인 최종 비교에는 사용하지 않습니다.
+[원본 학습 그래프](assets/experiments/yolo11m_100epoch_training_curves.png)를 함께 제공합니다. 이 값은 그래프에서 읽은 근삿값이므로 위 YOLO11s 실험 요약 표의 수치와 직접적인 최종 비교에는 사용하지 않습니다.
+
+## 실험 그림과 검증 근거
+
+### YOLO11s 학습 추이
+
+![YOLO11s 10·50·100 epoch의 Mask 학습 지표](assets/experiments/yolo11s_epoch_training_curves.png)
+
+![학습·검증 segmentation loss 비교](assets/experiments/yolo11s_epoch_segmentation_loss.png)
+
+제공된 그래프를 원본 그대로 추가했습니다. 50→100 epochs의 최고 Mask mAP50-95 차이는 작으며, 이 그래프만으로 과적합 여부나 다른 데이터에 대한 일반화 성능을 확정하지 않습니다. 요약 캡처에는 마지막 epoch가 11·51·101로 표기되어 있어 실행명(10·50·100)과 구분해야 합니다.
+
+### 단일 이미지의 정성 비교
+
+![10·50·100 epoch 예측 비교](assets/experiments/yolo11s_epoch_prediction_comparison.png)
+
+같은 예시에서 주 균열이 검출되지만, 50·100 epoch 결과에는 주변의 작은 분리 예측도 보입니다. 높은 confidence나 검출 개수가 곧 높은 정확도를 뜻하지 않습니다. 이미지 제목에 `ChatGPT Image`가 포함되어 있으므로 이 사례는 생성 이미지일 가능성이 있는 데모로 취급하며, 실제 현장 검증의 근거로 사용하지 않습니다. 원본 그림의 제목 일부 겹침도 그대로 보존했습니다.
+
+![원본 이미지, 마스크 및 인스턴스 예측 예시](assets/experiments/crack_mask_instance_example.png)
+
+이 그림은 하나의 연속 균열이 여러 인스턴스로 나뉘는 사례를 보여줍니다. 표시된 5.3481%는 해당 예측의 이미지 내 픽셀 면적비이며, 실제 손상 면적이나 정답 대비 정확도가 아닙니다. 모델·임계값의 완전한 실행 기록이 없어 epoch 비교 결과와 동일 조건이라고 단정하지 않습니다. SAM 보정 전후 비교로도 사용하지 않습니다.
+
+원본 출처, 표 전사 기준, 추가 자료와 남은 확인 사항은 [실험 근거 문서](docs/experiment-evidence.md)에 정리했습니다.
 
 ## Repository Structure
 
 ```text
 YOLO/
+├── assets/experiments/  # 원본 실험 그림·요약 캡처 8개
+├── docs/experiment-evidence.md
+├── results/yolo11s_epoch_metrics.json
 ├── notebooks/
 │   ├── YOLO11_Crack_Model_Open_and_Test_Colab.ipynb
 │   ├── YOLO26m_Crack_Training.ipynb
@@ -231,3 +256,4 @@ Roboflow API 키나 기타 인증정보를 노트북에 직접 입력해 저장�
 | [OSM · 캠퍼스 지도 분석](https://github.com/DoubleDeep-ai/osm-campus-map-analysis) | 공공 지도와 보행 네트워크의 공간정보 탐색 |
 
 각 저장소는 독립된 프로젝트입니다. 비공개 저장소 링크는 접근 권한이 있는 계정에서 열립니다.
+

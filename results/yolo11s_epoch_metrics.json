@@ -1,0 +1,90 @@
+{
+  "provenance": "Manual transcription of supplied screenshots; not raw training logs or a new evaluation",
+  "epoch_note": "Reported epoch numbers preserved; indexing unverified",
+  "runs": [
+    {
+      "run": "s10",
+      "nominal_epochs": 10,
+      "final": {
+        "reported_epoch": 11,
+        "source": "assets/experiments/final_epoch_summary.jpg",
+        "box_precision": 0.7825,
+        "box_recall": 0.6148,
+        "box_map50": 0.6381,
+        "box_map50_95": 0.4131,
+        "mask_precision": 0.689,
+        "mask_recall": 0.5259,
+        "mask_map50": 0.4753,
+        "mask_map50_95": 0.1538
+      },
+      "best_by_mask_map50_95": {
+        "reported_epoch": 11,
+        "source": "assets/experiments/best_epoch_summary.jpg",
+        "box_precision": 0.7825,
+        "box_recall": 0.6148,
+        "box_map50": 0.6381,
+        "box_map50_95": 0.4131,
+        "mask_precision": 0.689,
+        "mask_recall": 0.5259,
+        "mask_map50": 0.4753,
+        "mask_map50_95": 0.1538
+      }
+    },
+    {
+      "run": "s50",
+      "nominal_epochs": 50,
+      "final": {
+        "reported_epoch": 51,
+        "source": "assets/experiments/final_epoch_summary.jpg",
+        "box_precision": 0.7659,
+        "box_recall": 0.7632,
+        "box_map50": 0.7948,
+        "box_map50_95": 0.6122,
+        "mask_precision": 0.7498,
+        "mask_recall": 0.6593,
+        "mask_map50": 0.6768,
+        "mask_map50_95": 0.2419
+      },
+      "best_by_mask_map50_95": {
+        "reported_epoch": 48,
+        "source": "assets/experiments/best_epoch_summary.jpg",
+        "box_precision": 0.8047,
+        "box_recall": 0.7476,
+        "box_map50": 0.8069,
+        "box_map50_95": 0.6039,
+        "mask_precision": 0.791,
+        "mask_recall": 0.6166,
+        "mask_map50": 0.6628,
+        "mask_map50_95": 0.245
+      }
+    },
+    {
+      "run": "s100",
+      "nominal_epochs": 100,
+      "final": {
+        "reported_epoch": 101,
+        "source": "assets/experiments/final_epoch_summary.jpg",
+        "box_precision": 0.8807,
+        "box_recall": 0.7296,
+        "box_map50": 0.8233,
+        "box_map50_95": 0.6291,
+        "mask_precision": 0.7808,
+        "mask_recall": 0.6463,
+        "mask_map50": 0.6685,
+        "mask_map50_95": 0.2385
+      },
+      "best_by_mask_map50_95": {
+        "reported_epoch": 95,
+        "source": "assets/experiments/best_epoch_summary.jpg",
+        "box_precision": 0.7847,
+        "box_recall": 0.7704,
+        "box_map50": 0.8107,
+        "box_map50_95": 0.614,
+        "mask_precision": 0.8017,
+        "mask_recall": 0.6518,
+        "mask_map50": 0.6894,
+        "mask_map50_95": 0.2453
+      }
+    }
+  ]
+}
