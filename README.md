@@ -1,6 +1,6 @@
-# Concrete Crack Segmentation with YOLO & SAM
+# Concrete Crack Segmentation & Auto-Labeling with YOLO–SAM
 
-> 콘크리트 균열을 픽셀 단위로 탐지하고, YOLO의 빠른 예측과 SAM의 경계 보정을 결합한 컴퓨터 비전 프로젝트
+> 콘크리트 균열 세그멘테이션부터 YOLO–SAM 자동 라벨 생성, Roboflow 검수용 데이터셋 내보내기까지 연결하는 컴퓨터 비전 프로젝트
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
 ![Ultralytics](https://img.shields.io/badge/Ultralytics-YOLO11%20%7C%20YOLO26-111F68)
@@ -11,11 +11,13 @@
 김주형 · 단국대학교 토목환경공학과  
 Civil Engineering × Computer Vision
 
-[핵심 결과](#핵심-결과) · [실험 비교](#experiments) · [노트북](#notebooks) · [실행 방법](#quick-start)
+[핵심 결과](#핵심-결과) · [자동 라벨링](#auto-labeling) · [실험 비교](#experiments) · [노트북](#notebooks) · [실행 방법](#quick-start)
 
 ## 핵심 결과
 
-균열 세그멘테이션 학습·추론과 YOLO → SAM 후처리를 구현한 연구 프로젝트입니다. 현재 정량 결과는 YOLO11s 실험 중심이며, SAM 보정의 성능 향상은 별도 비교 실험이 필요합니다.
+균열 세그멘테이션 학습·추론과 **YOLO–SAM 자동 라벨링 파이프라인**을 구현했습니다. YOLO가 찾은 균열 후보를 SAM으로 보정하고, 여러 이미지의 polygon 라벨과 Roboflow 검수용 ZIP을 자동 생성합니다.
+
+현재 정량 결과는 YOLO11s 실험 중심이며, SAM 보정의 성능 향상은 별도 비교 실험이 필요합니다.
 
 | 실행 | 최고 Mask mAP50-95 | 마지막 epoch Mask mAP50-95 |
 |---|---:|---:|
@@ -62,8 +64,27 @@ YOLO가 균열 후보를 빠르게 찾고, SAM이 해당 후보 주변에서 경
 | SAM refinement | YOLO 마스크를 prompt로 사용한 SAM 2.1 경계 보정 |
 | Quality control | 최소 면적, IoU, 면적비 기반 후보 필터링 |
 | Quantification | 균열별·전체 픽셀 면적과 이미지 대비 면적비 산출 |
-| Label export | Roboflow 수정용 YOLO polygon 라벨과 ZIP 생성 |
+| **Auto-labeling** | **YOLO–SAM 결과를 YOLO segmentation polygon TXT로 자동 변환** |
+| Batch export | 여러 이미지의 원본·라벨·data.yaml을 Roboflow 검수용 ZIP으로 일괄 저장 |
 | Reproducibility | Colab, Google Drive, 고정 seed 기반 실행 흐름 |
+
+## Auto-Labeling
+
+**균열 라벨 초안을 자동 생성하고, Roboflow에서 검수·수정할 수 있는 워크플로입니다.**
+
+| 단계 | 처리 내용 |
+|---|---|
+| 균열 후보 탐지 | 학습된 YOLO 모델로 이미지별 균열 마스크 생성 |
+| SAM 경계 보정 | YOLO 마스크를 prompt로 사용해 후보 영역 보정 |
+| 결과 선택 | IoU·면적비 조건을 통과한 SAM 마스크 채택, 미통과 시 YOLO 마스크 사용 |
+| 라벨 자동 생성 | 최종 마스크의 외곽선을 정규화된 YOLO segmentation polygon TXT로 변환 |
+| 검수용 내보내기 | 원본 이미지·라벨·data.yaml을 ZIP으로 저장하고 비교 이미지 제공 |
+
+[자동 라벨링 노트북 실행](notebooks/YOLO_SAM_Crack_Final_Process.ipynb)
+
+입력 이미지 폴더와 학습된 YOLO 가중치를 지정하면 여러 장을 순차 처리합니다. 생성된 `YOLO_SAM_Roboflow_Review.zip`을 Roboflow에 업로드해 라벨을 검수·수정할 수 있습니다.
+
+자동 라벨은 검수 전 초안입니다. YOLO가 놓친 균열은 사람이 추가해야 하며, 검수 후 학습·검증 데이터를 분리해 재학습에 활용합니다.
 
 ## Experiments
 
@@ -72,7 +93,7 @@ YOLO가 균열 후보를 빠르게 찾고, SAM이 해당 후보 주변에서 경
 | YOLO11s-seg | 640 | 10·50·100 epochs | epoch 증가에 따른 성능 비교 |
 | YOLO11m-seg | 640 | 50·100 epochs | 모델 크기 변화 비교 |
 | YOLO26m-seg | 1024 | 최대 250 epochs, patience 50 | 고해상도 균열 학습 |
-| YOLO + SAM 2.1 | YOLO 1280 / SAM 1024 | 마스크 기반 refinement | 경계 보정 및 라벨 생성 |
+| YOLO + SAM 2.1 | YOLO 1280 / SAM 1024 | 마스크 기반 refinement | 경계 보정 및 자동 라벨링 |
 
 ### YOLO11s Epoch Ablation
 
@@ -170,7 +191,7 @@ YOLO/
 |---|---|
 | [YOLO11 model test](notebooks/YOLO11_Crack_Model_Open_and_Test_Colab.ipynb) | 저장된 YOLO11 모델을 불러와 단일 이미지 예측 및 Drive 저장 |
 | [YOLO26m training](notebooks/YOLO26m_Crack_Training.ipynb) | Roboflow 데이터셋 다운로드, YOLO26m 학습 및 최적 모델 검증 |
-| [YOLO → SAM process](notebooks/YOLO_SAM_Crack_Final_Process.ipynb) | 여러 이미지의 YOLO 예측, SAM 보정, 결과·라벨 일괄 저장 |
+| [YOLO–SAM auto-labeling](notebooks/YOLO_SAM_Crack_Final_Process.ipynb) | 균열 라벨 초안 자동 생성, 비교 이미지 및 Roboflow 검수용 ZIP 저장 |
 
 ## Quick Start
 
