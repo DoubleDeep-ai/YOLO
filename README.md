@@ -25,7 +25,7 @@ Civil Engineering × Computer Vision
 
 최고값은 각 실행에서 Mask mAP50-95가 가장 높은 epoch를 선택한 값입니다. s50과 s100의 최고값 차이는 0.0003(0.03%p)입니다. 반복 실험과 동일 테스트셋 재평가가 없어 이 차이를 통계적으로 유의한 우위로 해석하지 않습니다.
 
-수치는 [첨부 실험 요약 캡처](docs/experiment-evidence.md)를 대조해 정리했습니다. 원본 `results.csv`는 제공 자료에 없어 CSV 대조와 epoch 번호 확인이 남아 있습니다. [전사한 정량 지표](results/yolo11s_epoch_metrics.json)는 재학습 결과가 아닌 캡처의 기록입니다.
+[실험 요약표와 출처](docs/experiment-evidence.md) · [정량 지표 JSON](results/yolo11s_epoch_metrics.json)
 
 ## Project Overview
 
@@ -116,7 +116,7 @@ YOLO가 균열 후보를 빠르게 찾고, SAM이 해당 후보 주변에서 경
 
 </details>
 
-10→50 epochs에서 Mask 성능이 크게 향상됐습니다. 50→100 epochs에서는 최고 체크포인트의 Mask mAP50-95가 0.2450에서 0.2453으로 거의 정체된 반면, Mask mAP50과 Precision은 추가로 개선됐습니다. 이 실행들에서는 최고 Mask mAP50-95의 추가 증가가 작았습니다. 학습 비용은 별도로 측정되지 않았으며, 모델 선택에는 동일 조건 재평가와 Recall 요구 수준을 함께 고려해야 합니다.
+10→50 epochs에서 Mask 성능이 크게 향상됐습니다. 50→100 epochs에서는 최고 체크포인트의 Mask mAP50-95가 0.2450에서 0.2453으로 거의 정체된 반면, Mask mAP50과 Precision은 추가로 개선됐습니다.
 
 #### Preliminary YOLO11m Reference
 
@@ -132,19 +132,19 @@ YOLO가 균열 후보를 빠르게 찾고, SAM이 해당 후보 주변에서 경
 
 ![학습·검증 segmentation loss 비교](assets/experiments/yolo11s_epoch_segmentation_loss.png)
 
-제공된 그래프를 원본 그대로 추가했습니다. 50→100 epochs의 최고 Mask mAP50-95 차이는 작으며, 이 그래프만으로 과적합 여부나 다른 데이터에 대한 일반화 성능을 확정하지 않습니다. 요약 캡처에는 마지막 epoch가 11·51·101로 표기되어 있어 실행명(10·50·100)과 구분해야 합니다.
+학습 epoch에 따른 Mask 지표와 학습·검증 손실의 변화입니다. epoch 표기 기준은 [실험 근거 문서](docs/experiment-evidence.md)를 참고하세요.
 
 ### 단일 이미지의 정성 비교
 
 ![10·50·100 epoch 예측 비교](assets/experiments/yolo11s_epoch_prediction_comparison.png)
 
-같은 예시에서 주 균열이 검출되지만, 50·100 epoch 결과에는 주변의 작은 분리 예측도 보입니다. 높은 confidence나 검출 개수가 곧 높은 정확도를 뜻하지 않습니다. 이미지 제목에 `ChatGPT Image`가 포함되어 있으므로 이 사례는 생성 이미지일 가능성이 있는 데모로 취급하며, 실제 현장 검증의 근거로 사용하지 않습니다. 원본 그림의 제목 일부 겹침도 그대로 보존했습니다.
+주 균열 검출과 주변의 작은 분리 예측을 비교한 데모입니다. 이미지 제목에 `ChatGPT Image`가 포함되어 있어 생성 이미지일 가능성이 있으며, 현장 검증 결과와 구분합니다.
 
 ![원본 이미지, 마스크 및 인스턴스 예측 예시](assets/experiments/crack_mask_instance_example.png)
 
-이 그림은 하나의 연속 균열이 여러 인스턴스로 나뉘는 사례를 보여줍니다. 표시된 5.3481%는 해당 예측의 이미지 내 픽셀 면적비이며, 실제 손상 면적이나 정답 대비 정확도가 아닙니다. 모델·임계값의 완전한 실행 기록이 없어 epoch 비교 결과와 동일 조건이라고 단정하지 않습니다. SAM 보정 전후 비교로도 사용하지 않습니다.
+연속 균열이 여러 인스턴스로 나뉘는 예측 사례입니다. 5.3481%는 예측 마스크의 이미지 내 픽셀 면적비이며, 실제 손상 면적을 뜻하지 않습니다.
 
-원본 출처, 표 전사 기준, 추가 자료와 남은 확인 사항은 [실험 근거 문서](docs/experiment-evidence.md)에 정리했습니다.
+수치의 출처와 예시별 평가 조건은 [실험 근거 문서](docs/experiment-evidence.md)에 정리했습니다.
 
 ## Repository Structure
 
@@ -176,7 +176,7 @@ YOLO/
 
 ### 1. Google Colab에서 노트북 열기
 
-위 [노트북 목록](#notebooks)에서 목적에 맞는 파일을 내려받아 Colab의 파일 → 노트북 업로드로 엽니다. GPU 런타임을 선택하고 설치 셀부터 순서대로 실행합니다. 비공개 저장소에서는 GitHub 링크로 바로 여는 방식이 계정 인증에 따라 제한될 수 있습니다.
+위 [노트북 목록](#notebooks)에서 목적에 맞는 파일을 내려받아 Colab의 파일 → 노트북 업로드로 엽니다. GPU 런타임을 선택하고 설치 셀부터 순서대로 실행합니다.
 
 ### 2. 모델 경로 설정
 
@@ -222,8 +222,6 @@ results/
 - Task: instance segmentation
 - Class: `crack`
 
-데이터 사용 전 각 데이터셋의 공개 범위와 라이선스를 별도로 확인해야 합니다.
-
 ## Current Limitations
 
 - 픽셀 면적을 실제 면적으로 환산하려면 기준 길이 또는 카메라 보정 정보가 필요합니다.
@@ -233,27 +231,15 @@ results/
 
 ## Next Steps
 
-- [ ] YOLO11s·YOLO11m·YOLO26m 동일 조건 정량 비교
-- [ ] 대표 성공·실패 사례 시각화
+- [ ] YOLO11s·YOLO11m·YOLO26m 기존 평가 결과 취합 및 비교 조건 확인
+- [ ] 실제 현장 이미지의 정답 마스크 기반 성공·실패 사례 분석
 - [ ] 균열 폭·길이·연속성을 반영한 평가 지표 검증
 - [ ] 실제 축척을 이용한 면적 및 폭 측정
 - [ ] YOLO–SAM 보정 전후 성능 비교
-
-## Security
-
-Roboflow API 키나 기타 인증정보를 노트북에 직접 입력해 저장하지 않습니다. 실행 시 환경 변수 또는 보이지 않는 입력 방식을 사용하세요. 이미 노출된 키는 폐기하고 재발급해야 합니다.
-
-## Disclaimer
-
-본 저장소는 연구 및 교육 목적의 프로젝트입니다. 예측 결과만으로 시설물의 안전등급이나 보수 필요성을 확정해서는 안 됩니다.
 
 ## 다른 프로젝트
 
 | 프로젝트 | 주요 내용 |
 |---|---|
-| [YOLO · 균열 세그멘테이션](https://github.com/DoubleDeep-ai/YOLO) | 토목 이미지의 균열 탐지·마스크 분석 및 SAM 후처리 |
 | [CIFAR-10 · 오류 분석](https://github.com/DoubleDeep-ai/cifar10-error-analysis) | PyTorch CNN의 오분류·신뢰도·시드별 변동 분석 |
 | [OSM · 캠퍼스 지도 분석](https://github.com/DoubleDeep-ai/osm-campus-map-analysis) | 공공 지도와 보행 네트워크의 공간정보 탐색 |
-
-각 저장소는 독립된 프로젝트입니다. 비공개 저장소 링크는 접근 권한이 있는 계정에서 열립니다.
-
