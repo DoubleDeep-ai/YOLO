@@ -1,266 +1,57 @@
-# Concrete Crack Segmentation & Auto-Labeling with YOLO–SAM
+# 콘크리트 균열 세그멘테이션과 YOLO–SAM 자동 라벨링
 
-> 콘크리트 균열 세그멘테이션부터 YOLO–SAM 자동 라벨 생성, Roboflow 검수용 데이터셋 내보내기까지 연결하는 컴퓨터 비전 프로젝트
+## 왜 했는지
 
-![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
-![Ultralytics](https://img.shields.io/badge/Ultralytics-YOLO11%20%7C%20YOLO26-111F68)
-![SAM](https://img.shields.io/badge/Segmentation-SAM%202.1-6C5CE7)
-![Colab](https://img.shields.io/badge/Environment-Google%20Colab-F9AB00?logo=googlecolab&logoColor=white)
-![Task](https://img.shields.io/badge/Task-Instance%20Segmentation-2EA44F)
+콘크리트 이미지에서 균열의 위치와 형태를 찾고, 예측 결과를 검수할 수 있는 라벨로 저장하려고 했다.
 
-김주형 · 단국대학교 토목환경공학과  
-Civil Engineering × Computer Vision
+[직접 쓰기: SAM을 붙이게 된 이유]
 
-[핵심 결과](#핵심-결과) · [자동 라벨링](#auto-labeling) · [실험 비교](#experiments) · [노트북](#notebooks) · [실행 방법](#quick-start)
+## 한 것
 
-## 핵심 결과
+- YOLO11s-seg를 10·50·100 epoch로 학습해 비교했다.
+- YOLO 마스크를 SAM 2.1 프롬프트로 넣어 경계를 보정하고, IoU·면적비로 걸러냈다.
+- 보정한 마스크를 YOLO polygon 라벨로 바꿔 Roboflow 검수용으로 내보냈다.
+- YOLO11m·YOLO26m도 학습했지만 같은 조건으로 비교한 결과는 아직 정리하지 못했다.
 
-균열 세그멘테이션 학습·추론과 **YOLO–SAM 자동 라벨링 파이프라인**을 구현했습니다. YOLO가 찾은 균열 후보를 SAM으로 보정하고, 여러 이미지의 polygon 라벨과 Roboflow 검수용 ZIP을 자동 생성합니다.
+## 결과
 
-현재 정량 결과는 YOLO11s 실험 중심이며, SAM 보정의 성능 향상은 별도 비교 실험이 필요합니다.
+각 학습 실행의 마지막 epoch에서 마스크 지표를 비교했다.
 
-| 실행 | 최고 Mask mAP50-95 | 마지막 epoch Mask mAP50-95 |
-|---|---:|---:|
-| s10 | 0.1538 | 0.1538 |
-| s50 | 0.2450 | 0.2419 |
-| s100 | 0.2453 | 0.2385 |
-
-최고값은 각 실행에서 Mask mAP50-95가 가장 높은 epoch를 선택한 값입니다. s50과 s100의 최고값 차이는 0.0003(0.03%p)입니다. 반복 실험과 동일 테스트셋 재평가가 없어 이 차이를 통계적으로 유의한 우위로 해석하지 않습니다.
-
-[실험 요약표와 출처](docs/experiment-evidence.md) · [정량 지표 JSON](results/yolo11s_epoch_metrics.json)
-
-## Project Overview
-
-시설물 균열 점검에서는 균열의 존재뿐 아니라 위치, 형태, 연속성 및 면적을 정밀하게 파악해야 합니다. 이 프로젝트는 콘크리트 이미지에서 균열을 인스턴스 세그멘테이션하고, 후처리 결과를 정량 분석 및 수동 검수 가능한 형태로 저장하는 파이프라인을 구축합니다.
-
-핵심 목표는 다음과 같습니다.
-
-- YOLO11·YOLO26 모델의 균열 세그멘테이션 학습 및 비교
-- YOLO 예측 마스크를 SAM 2.1로 보정
-- 균열별 신뢰도와 픽셀 면적 산출
-- 비교 오버레이와 YOLO polygon 라벨 자동 생성
-- Google Colab과 Drive 기반의 재현 가능한 학습·추론 환경 구성
-
-## Pipeline
-
-```mermaid
-flowchart TD
-    A["Concrete image"] --> B["YOLO segmentation"]
-    B --> C["Candidate mask"]
-    C --> D["SAM 2.1 refinement"]
-    D --> E["Quality filtering"]
-    E --> F["Final mask & polygon"]
-    F --> G["Area, confidence & CSV"]
-```
-
-YOLO가 균열 후보를 빠르게 찾고, SAM이 해당 후보 주변에서 경계를 다시 추정합니다. SAM 결과가 YOLO 마스크와 지나치게 다르면 IoU·면적비 조건으로 제외하여 콘크리트 배경 전체가 선택되는 오류를 줄입니다.
-
-## Key Features
-
-| 기능 | 내용 |
-|---|---|
-| Model training | YOLO11 및 YOLO26m 균열 세그멘테이션 학습 |
-| Model inference | 단일 이미지 업로드, 마스크·박스·신뢰도 시각화 |
-| SAM refinement | YOLO 마스크를 prompt로 사용한 SAM 2.1 경계 보정 |
-| Quality control | 최소 면적, IoU, 면적비 기반 후보 필터링 |
-| Quantification | 균열별·전체 픽셀 면적과 이미지 대비 면적비 산출 |
-| **Auto-labeling** | **YOLO–SAM 결과를 YOLO segmentation polygon TXT로 자동 변환** |
-| Batch export | 여러 이미지의 원본·라벨·data.yaml을 Roboflow 검수용 ZIP으로 일괄 저장 |
-| Reproducibility | Colab, Google Drive, 고정 seed 기반 실행 흐름 |
-
-## Auto-Labeling
-
-**균열 라벨 초안을 자동 생성하고, Roboflow에서 검수·수정할 수 있는 워크플로입니다.**
-
-| 단계 | 처리 내용 |
-|---|---|
-| 균열 후보 탐지 | 학습된 YOLO 모델로 이미지별 균열 마스크 생성 |
-| SAM 경계 보정 | YOLO 마스크를 prompt로 사용해 후보 영역 보정 |
-| 결과 선택 | IoU·면적비 조건을 통과한 SAM 마스크 채택, 미통과 시 YOLO 마스크 사용 |
-| 라벨 자동 생성 | 최종 마스크의 외곽선을 정규화된 YOLO segmentation polygon TXT로 변환 |
-| 검수용 내보내기 | 원본 이미지·라벨·data.yaml을 ZIP으로 저장하고 비교 이미지 제공 |
-
-[자동 라벨링 노트북 실행](notebooks/YOLO_SAM_Crack_Final_Process.ipynb)
-
-입력 이미지 폴더와 학습된 YOLO 가중치를 지정하면 여러 장을 순차 처리합니다. 생성된 `YOLO_SAM_Roboflow_Review.zip`을 Roboflow에 업로드해 라벨을 검수·수정할 수 있습니다.
-
-자동 라벨은 검수 전 초안입니다. YOLO가 놓친 균열은 사람이 추가해야 하며, 검수 후 학습·검증 데이터를 분리해 재학습에 활용합니다.
-
-## Experiments
-
-| 모델 | 입력 크기 | 학습 설정 | 용도 |
-|---|---:|---|---|
-| YOLO11s-seg | 640 | 10·50·100 epochs | epoch 증가에 따른 성능 비교 |
-| YOLO11m-seg | 640 | 50·100 epochs | 모델 크기 변화 비교 |
-| YOLO26m-seg | 1024 | 최대 250 epochs, patience 50 | 고해상도 균열 학습 |
-| YOLO + SAM 2.1 | YOLO 1280 / SAM 1024 | 마스크 기반 refinement | 경계 보정 및 자동 라벨링 |
-
-### YOLO11s Epoch Ablation
-
-동일한 YOLO11s-seg 계열에서 학습 epoch를 10·50·100으로 늘렸을 때의 결과입니다. 아래 최종값은 각 실행의 마지막 epoch에서 추출한 수치입니다.
-
-#### Final-Epoch Segmentation Metrics
-
-| Run | Input | Epochs | Mask Precision | Mask Recall | Mask mAP50 | Mask mAP50-95 |
+| 실행 | 입력 크기 | 학습 epoch | 마스크 정밀도 | 마스크 재현율 | 마스크 mAP50 | 마스크 mAP50-95 |
 |---|---:|---:|---:|---:|---:|---:|
 | s10 | 640 | 10 | 0.6890 | 0.5259 | 0.4753 | 0.1538 |
 | s50 | 640 | 50 | 0.7498 | 0.6593 | 0.6768 | 0.2419 |
 | s100 | 640 | 100 | 0.7808 | 0.6463 | 0.6685 | 0.2385 |
 
-<details>
-<summary>박스 지표·최고 epoch·상대 향상률 상세 보기</summary>
+10→50 epoch에서 마스크 성능이 크게 올랐다.  
+50→100 epoch에서는 정밀도만 올랐고 재현율과 mAP는 소폭 낮아져, 성능 향상은 거의 정체됐다.
 
-#### Final-Epoch Bounding-Box Metrics
+![YOLO11s 학습 추이](assets/experiments/yolo11s_epoch_training_curves.png)
 
-| Run | Box Precision | Box Recall | Box mAP50 | Box mAP50-95 |
-|---|---:|---:|---:|---:|
-| s10 | 0.7825 | 0.6148 | 0.6381 | 0.4131 |
-| s50 | 0.7659 | 0.7632 | 0.7948 | 0.6122 |
-| s100 | 0.8807 | 0.7296 | 0.8233 | 0.6291 |
+10·50·100 epoch 학습의 마스크 지표 변화를 비교했다.
 
-#### Best Checkpoint by Mask mAP50-95
+![균열 마스크와 인스턴스 예측 예시](assets/experiments/crack_mask_instance_example.png)
 
-| Run | Best epoch | Mask Precision | Mask Recall | Mask mAP50 | Mask mAP50-95 |
-|---|---:|---:|---:|---:|---:|
-| s10 | 11* | 0.6890 | 0.5259 | 0.4753 | 0.1538 |
-| s50 | 48 | 0.7910 | 0.6166 | 0.6628 | 0.2450 |
-| s100 | 95 | 0.8017 | 0.6518 | 0.6894 | 0.2453 |
+연속된 균열이 여러 인스턴스로 나뉘어 예측된 사례를 확인했다.
 
-\* 실험 요약 코드가 출력한 epoch 번호를 그대로 기록했습니다. 원본 `results.csv`의 indexing 방식은 최종 정리 전에 다시 확인할 예정입니다.
+## 안 된 것과 한계
 
-#### Improvement over s10
+- SAM 보정 전후의 성능은 정량 비교하지 못했다.
+- 모델 간 동일 test split 재평가는 하지 못했다.
+- 기준 길이나 카메라 보정 정보 없이 픽셀 면적을 실제 면적으로 바꾸지는 못했다.
+- SAM이 균열 주변 배경까지 선택할 수 있어, 자동 라벨은 검수 전 초안으로 다뤘다.
 
-| Run | Mask Precision | Mask Recall | Mask mAP50 | Mask mAP50-95 |
-|---|---:|---:|---:|---:|
-| s50 | +14.81% | +17.25% | +39.44% | +59.37% |
-| s100 | +16.36% | +23.94% | +45.04% | +59.52% |
+## 실행
 
-</details>
+- [YOLO11_Crack_Model_Open_and_Test_Colab.ipynb](notebooks/YOLO11_Crack_Model_Open_and_Test_Colab.ipynb): 저장된 YOLO11 모델로 단일 이미지를 예측하고 Drive에 저장했다.
+- [YOLO26m_Crack_Training.ipynb](notebooks/YOLO26m_Crack_Training.ipynb): Roboflow 데이터를 받아 YOLO26m을 학습하고 최적 모델을 검증했다.
+- [YOLO_SAM_Crack_Final_Process.ipynb](notebooks/YOLO_SAM_Crack_Final_Process.ipynb): 라벨 초안, 비교 이미지, Roboflow 검수용 ZIP을 저장했다.
 
-10→50 epochs에서 Mask 성능이 크게 향상됐습니다. 50→100 epochs에서는 최고 체크포인트의 Mask mAP50-95가 0.2450에서 0.2453으로 거의 정체된 반면, Mask mAP50과 Precision은 추가로 개선됐습니다.
+Colab에서 GPU 런타임으로 실행했다. `weights/best.pt`를 Drive에 올리고 노트북의 모델 경로를 지정했다.
 
-#### Preliminary YOLO11m Reference
+## 데이터
 
-별도로 제공된 YOLO11m-seg 100-epoch 학습 그래프의 마지막 지점은 Mask Precision ≈0.75, Recall ≈0.64, mAP50 ≈0.66, mAP50-95 ≈0.23입니다.
+YOLO11: `university-bswxt / crack-uuw5e / version 8`  
+YOLO26: `aos-workspace / erc2-59n5c / version 1`
 
-[원본 학습 그래프](assets/experiments/yolo11m_100epoch_training_curves.png)를 함께 제공합니다. 이 값은 그래프에서 읽은 근삿값이므로 위 YOLO11s 실험 요약 표의 수치와 직접적인 최종 비교에는 사용하지 않습니다.
-
-## 실험 그림과 검증 근거
-
-### YOLO11s 학습 추이
-
-![YOLO11s 10·50·100 epoch의 Mask 학습 지표](assets/experiments/yolo11s_epoch_training_curves.png)
-
-![학습·검증 segmentation loss 비교](assets/experiments/yolo11s_epoch_segmentation_loss.png)
-
-학습 epoch에 따른 Mask 지표와 학습·검증 손실의 변화입니다. epoch 표기 기준은 [실험 근거 문서](docs/experiment-evidence.md)를 참고하세요.
-
-### 단일 이미지의 정성 비교
-
-![10·50·100 epoch 예측 비교](assets/experiments/yolo11s_epoch_prediction_comparison.png)
-
-주 균열 검출과 주변의 작은 분리 예측을 비교한 데모입니다. 이미지 제목에 `ChatGPT Image`가 포함되어 있어 생성 이미지일 가능성이 있으며, 현장 검증 결과와 구분합니다.
-
-![원본 이미지, 마스크 및 인스턴스 예측 예시](assets/experiments/crack_mask_instance_example.png)
-
-연속 균열이 여러 인스턴스로 나뉘는 예측 사례입니다. 5.3481%는 예측 마스크의 이미지 내 픽셀 면적비이며, 실제 손상 면적을 뜻하지 않습니다.
-
-수치의 출처와 예시별 평가 조건은 [실험 근거 문서](docs/experiment-evidence.md)에 정리했습니다.
-
-## Repository Structure
-
-```text
-YOLO/
-├── assets/experiments/  # 원본 실험 그림·요약 캡처 8개
-├── docs/experiment-evidence.md
-├── results/yolo11s_epoch_metrics.json
-├── notebooks/
-│   ├── YOLO11_Crack_Model_Open_and_Test_Colab.ipynb
-│   ├── YOLO26m_Crack_Training.ipynb
-│   └── YOLO_SAM_Crack_Final_Process.ipynb
-├── weights/
-│   └── best.pt
-├── requirements.txt
-├── .gitignore
-└── README.md
-```
-
-### Notebooks
-
-| 노트북 | 역할 |
-|---|---|
-| [YOLO11 model test](notebooks/YOLO11_Crack_Model_Open_and_Test_Colab.ipynb) | 저장된 YOLO11 모델을 불러와 단일 이미지 예측 및 Drive 저장 |
-| [YOLO26m training](notebooks/YOLO26m_Crack_Training.ipynb) | Roboflow 데이터셋 다운로드, YOLO26m 학습 및 최적 모델 검증 |
-| [YOLO–SAM auto-labeling](notebooks/YOLO_SAM_Crack_Final_Process.ipynb) | 균열 라벨 초안 자동 생성, 비교 이미지 및 Roboflow 검수용 ZIP 저장 |
-
-## Quick Start
-
-### 1. Google Colab에서 노트북 열기
-
-위 [노트북 목록](#notebooks)에서 목적에 맞는 파일을 내려받아 Colab의 파일 → 노트북 업로드로 엽니다. GPU 런타임을 선택하고 설치 셀부터 순서대로 실행합니다.
-
-### 2. 모델 경로 설정
-
-저장소의 `weights/best.pt`를 Google Drive에 업로드한 뒤 노트북의 모델 경로를 수정합니다.
-
-```python
-YOLO_MODEL_PATH = "/content/drive/MyDrive/your_folder/best.pt"
-```
-
-### 3. 추론 설정 조정
-
-```python
-YOLO_CONF = 0.25
-YOLO_IMGSZ = 1280
-MIN_COMPONENT_AREA = 100
-MIN_IOU = 0.50
-MIN_AREA_RATIO = 0.50
-MAX_AREA_RATIO = 2.00
-```
-
-### 4. 결과 확인
-
-YOLO–SAM 파이프라인은 다음 결과를 생성합니다.
-
-```text
-results/
-├── masks/
-│   ├── yolo/
-│   ├── sam_raw/
-│   └── final/
-├── comparison_overlays/
-├── roboflow_dataset/
-├── processing_summary.csv
-└── processing_errors.csv
-```
-
-## Dataset
-
-데이터셋은 Roboflow에서 관리하며 저장소에는 포함하지 않습니다.
-
-- YOLO11 experiments: `university-bswxt / crack-uuw5e / version 8`
-- YOLO26 experiments: `aos-workspace / erc2-59n5c / version 1`
-- Task: instance segmentation
-- Class: `crack`
-
-## Current Limitations
-
-- 픽셀 면적을 실제 면적으로 환산하려면 기준 길이 또는 카메라 보정 정보가 필요합니다.
-- SAM은 입력 prompt가 부정확하면 균열 주변 배경을 과도하게 선택할 수 있습니다.
-- 서로 다른 모델의 공정한 비교를 위해 동일 test split 기반 재평가가 필요합니다.
-- 구조적 위험도 평가는 균열 마스크만으로 확정할 수 없으며 전문가 판단과 현장 정보가 필요합니다.
-
-## Next Steps
-
-- [ ] YOLO11s·YOLO11m·YOLO26m 기존 평가 결과 취합 및 비교 조건 확인
-- [ ] 실제 현장 이미지의 정답 마스크 기반 성공·실패 사례 분석
-- [ ] 균열 폭·길이·연속성을 반영한 평가 지표 검증
-- [ ] 실제 축척을 이용한 면적 및 폭 측정
-- [ ] YOLO–SAM 보정 전후 성능 비교
-
-## 다른 프로젝트
-
-| 프로젝트 | 주요 내용 |
-|---|---|
-| [CIFAR-10 · 오류 분석](https://github.com/DoubleDeep-ai/cifar10-error-analysis) | PyTorch CNN의 오분류·신뢰도·시드별 변동 분석 |
-| [OSM · 캠퍼스 지도 분석](https://github.com/DoubleDeep-ai/osm-campus-map-analysis) | 공공 지도와 보행 네트워크의 공간정보 탐색 |
+코드 작성에 AI 도구를 보조로 활용했으며, 실험 설계와 결과 해석은 직접 수행했습니다.
