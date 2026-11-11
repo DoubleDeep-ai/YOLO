@@ -43,15 +43,15 @@ YOLO가 찾은 균열의 경계를 SAM으로 다듬으면 라벨 초안으로 �
 
 ## 실행
 
-- [YOLO11_Crack_Model_Open_and_Test_Colab.ipynb](notebooks/YOLO11_Crack_Model_Open_and_Test_Colab.ipynb): 저장된 YOLO11 모델로 단일 이미지를 예측하고 Drive에 저장했다.
-- [YOLO26m_Crack_Training.ipynb](notebooks/YOLO26m_Crack_Training.ipynb): Roboflow 데이터를 받아 YOLO26m을 학습하고 최적 모델을 검증했다.
-- [YOLO_SAM_Crack_Final_Process.ipynb](notebooks/YOLO_SAM_Crack_Final_Process.ipynb): 라벨 초안, 비교 이미지, Roboflow 검수용 ZIP을 저장했다.
+- [YOLO11_Crack_Model_Open_and_Test_Colab.ipynb](notebooks/YOLO11_Crack_Model_Open_and_Test_Colab.ipynb): 저장된 YOLO11 모델로 단일 이미지를 예측하고 Drive에 저장한다.
+- [YOLO26m_Crack_Training.ipynb](notebooks/YOLO26m_Crack_Training.ipynb): Roboflow 데이터를 받아 YOLO26m을 학습하고 최적 모델을 검증한다.
+- [YOLO_SAM_Crack_Final_Process.ipynb](notebooks/YOLO_SAM_Crack_Final_Process.ipynb): 라벨 초안, 비교 이미지, Roboflow 검수용 ZIP을 저장한다.
 
-Colab에서 GPU 런타임으로 실행했다. `weights/best.pt`를 Drive에 올리고 노트북의 모델 경로를 지정했다.
+`weights/best.pt`를 Drive에 올리고 노트북의 모델 경로를 지정한 뒤, Colab GPU 런타임에서 실행하면 된다.
 
 ## 데이터
 
 YOLO11: `university-bswxt / crack-uuw5e / version 8`  
 YOLO26: `aos-workspace / erc2-59n5c / version 1`
 
-코드 작성에 AI 도구를 보조로 활용했으며, 실험 설계와 결과 해석은 직접 수행했습니다.
+코드 작성에는 AI 도구의 도움을 받았고, 실험 설계와 결과 해석은 직접 했다.
